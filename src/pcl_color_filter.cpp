@@ -101,6 +101,7 @@ bool firstLook = true;
 
 Eigen::Vector4f centroid;
 
+ros::Publisher goal_pub;
 ros::Publisher cloud_pub;
 ros::Publisher elevator_cloud_pub;
 ros::Publisher debug_pub;
@@ -257,6 +258,8 @@ bool seg_cb(elevator_press_button::color_perception::Request &req, elevator_pres
   waitForCloudK(15);
   cloud = cloud_aggregated;
   ROS_INFO("got cloud");
+  
+  //filter by color
   // build the condition 
   int rMax = 180; 
   int rMin = 10; 
@@ -284,27 +287,56 @@ bool seg_cb(elevator_press_button::color_perception::Request &req, elevator_pres
   pcl::PassThrough<PointT> pass;
   pass.setInputCloud (cloud_filtered);
   pass.setFilterFieldName ("y");
-  pass.setFilterLimits (-.2, .3 );
+  pass.setFilterLimits (-.3, .3 );
   pass.filter (*cloud_filtered);
  
   
   pcl::PassThrough<PointT> passyx;
   passyx.setInputCloud (cloud_filtered);
   passyx.setFilterFieldName ("x");
-  passyx.setFilterLimits (-.3, .3);
+  passyx.setFilterLimits (-.15, .2);
   passyx.filter (*cloud_filtered);
   
   
   pcl::PassThrough<PointT> passyxz;
   passyxz.setInputCloud (cloud_filtered);
   passyxz.setFilterFieldName ("z");
-  passyxz.setFilterLimits (.3, 1);
+  passyxz.setFilterLimits (.6, 1);
   passyxz.filter (*cloud_filtered);
-  
-  
   
   pcl::toROSMsg(*cloud_filtered,cloud_ros);
   cloud_pub.publish(cloud_ros);	
+  
+  Eigen::Vector4f centroid;
+  pcl::compute3DCentroid(*cloud_filtered,centroid);
+  
+  geometry_msgs::PoseStamped goal;
+  goal.pose.position.x = centroid.x();
+  goal.pose.position.y = centroid.y();
+  goal.pose.position.z = centroid.z();
+  //get it flat (180 degress)
+  goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
+  goal.header.frame_id = cloud_ros.header.frame_id;
+		
+	tf::TransformListener listener;	
+  //mext transform pose into arm frame of reference and set orientation
+  try{
+	listener.waitForTransform(cloud_ros.header.frame_id,  "mico_link_origin",  ros::Time(0), ros::Duration(5.0) );
+	listener.transformPose("mico_api_origin", goal, goal);
+			
+  }
+  catch (tf::TransformException ex){
+	ROS_ERROR("%s",ex.what());
+	ros::Duration(1.0).sleep();
+  }
+		
+  //set orientation after transforming into arm frame of reference
+  goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(1.54,0,1.54);
+  goal.pose.position.z -= .09;
+		
+  //publish the two goals to get it to push the goor
+  goal_pub.publish(goal);
+  
   return true;
 		
 }	
@@ -330,7 +362,7 @@ int main (int argc, char** argv)
 	debug_pub = n.advertise<sensor_msgs::PointCloud2>("elevator_detector/debug2", 1);
 	cloud_pub = n.advertise<sensor_msgs::PointCloud2>("elevator_detector/debug", 1);
 	elevator_cloud_pub = n.advertise<sensor_msgs::PointCloud2>("elevator_detector/plane_cloud", 1);
-	
+	goal_pub = n.advertise<geometry_msgs::PoseStamped>("goal_to_go", 1);
 	//publisher for planar coefficents
 	//tf::transformEigenToTF(planar_coefficent_pub);
 	
