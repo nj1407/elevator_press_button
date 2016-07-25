@@ -167,6 +167,9 @@ void goal_cb (const geometry_msgs::PoseStampedConstPtr& input)
 		first_goal.header = input->header;
 		first_goal.pose = input->pose; 
 		first_goal.pose.position.x -= .05;
+		second_goal.header = input->header;
+		second_goal.pose = input->pose;
+		second_goal.pose.position.x += .15;
 		heardGoal = true;
 		
 }
