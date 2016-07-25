@@ -146,14 +146,17 @@ add_definitions(${PCL_DEFINITIONS})
 # add_dependencies(elevator_press_button ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
- add_executable(pcl_color_filter src/pcl_color_filter.cpp)
+ add_executable(pcl_panel_filter src/pcl_panel_filter.cpp)
+ add_executable(press_button src/press_button.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
- add_dependencies(pcl_color_filter elevator_press_button_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+ add_dependencies(pcl_panel_filter elevator_press_button_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+ add_dependencies(press_button elevator_press_button_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(pcl_color_filter ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES})
+target_link_libraries(pcl_panel_filter ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES})
+target_link_libraries(press_button ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES})
 #############
 ## Install ##
 #############

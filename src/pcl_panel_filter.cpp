@@ -105,6 +105,7 @@ ros::Publisher goal_pub;
 ros::Publisher cloud_pub;
 ros::Publisher elevator_cloud_pub;
 ros::Publisher debug_pub;
+ros::Publisher goal_pub_lower;
 PointCloudT::Ptr cloud_costmap (new PointCloudT);
 
 
@@ -332,10 +333,13 @@ bool seg_cb(elevator_press_button::color_perception::Request &req, elevator_pres
 		
   //set orientation after transforming into arm frame of reference
   goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(1.54,0,1.54);
-  goal.pose.position.z -= .09;
+  goal.pose.position.z -= .085;
 		
   //publish the two goals to get it to push the goor
   goal_pub.publish(goal);
+  goal.pose.position.z -= .06;
+  goal_pub_lower.publish(goal);
+  
   
   return true;
 		
@@ -363,11 +367,12 @@ int main (int argc, char** argv)
 	cloud_pub = n.advertise<sensor_msgs::PointCloud2>("elevator_detector/debug", 1);
 	elevator_cloud_pub = n.advertise<sensor_msgs::PointCloud2>("elevator_detector/plane_cloud", 1);
 	goal_pub = n.advertise<geometry_msgs::PoseStamped>("goal_to_go", 1);
+	goal_pub_lower = n.advertise<geometry_msgs::PoseStamped>("goal_to_go_two", 1);
 	//publisher for planar coefficents
 	//tf::transformEigenToTF(planar_coefficent_pub);
 	
 	//service
-	ros::ServiceServer service = n.advertiseService("pcl_color_filter/color_perception", seg_cb);
+	ros::ServiceServer service = n.advertiseService("pcl_button_filter/color_perception", seg_cb);
 	ros::ServiceClient client = n.serviceClient<elevator_press_button::color_perception>("color_perception");
 
 	
