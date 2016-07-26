@@ -224,7 +224,7 @@ int main (int argc, char** argv)
 	
 	//service
 	
-	ros::ServiceClient client = n.serviceClient<elevator_press_button::color_perception>("/door_handle_detection/door_perception");
+	ros::ServiceClient client = n.serviceClient<elevator_press_button::color_perception>("/pcl_button_filter/color_perception");
 	
 	ros::ServiceClient client_move = n.serviceClient<moveit_utils::MicoMoveitCartesianPose>("mico_cartesianpose_service");
 	
@@ -236,11 +236,8 @@ int main (int argc, char** argv)
 	segbot_arm_manipulation::closeHand();
 	//listenForArmData(30.0);
 	//joint_state_outofview = current_state;
-	
 	//set goal for mico service
 	elevator_press_button::color_perception panel_srv;
-	moveit_utils::MicoMoveitCartesianPose mico_srv;
-	mico_srv.request.target = first_goal;
 	
 	segbot_arm_manipulation::homeArm(n);
 	ros::spinOnce();
@@ -253,10 +250,7 @@ int main (int argc, char** argv)
 	//make calls to get vision
 	if(client.call(panel_srv)){
 		ros::spinOnce();
-		//if(client.call(door_srv)){
-			ROS_INFO("entered");
-			//ros::spinOnce();
-		//}	
+		ROS_INFO("entered");
 	} else {
 		ROS_INFO("didn't enter vision");
 	}

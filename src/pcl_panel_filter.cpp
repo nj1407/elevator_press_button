@@ -373,7 +373,7 @@ int main (int argc, char** argv)
 	
 	//service
 	ros::ServiceServer service = n.advertiseService("pcl_button_filter/color_perception", seg_cb);
-	ros::ServiceClient client = n.serviceClient<elevator_press_button::color_perception>("color_perception");
+	
 
 	
 	//refresh rate
