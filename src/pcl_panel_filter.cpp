@@ -86,6 +86,7 @@ PointCloudT::Ptr cloud (new PointCloudT);
 PointCloudT::Ptr cloud_aggregated (new PointCloudT);
 PointCloudT::Ptr cloud_filtered (new PointCloudT);
 PointCloudT::Ptr cloud_centroid (new PointCloudT);
+PointCloudT::Ptr cloud_plane (new PointCloudT);
 PointCloudT::Ptr cloud_blobs (new PointCloudT);
 PointCloudT::Ptr empty_cloud (new PointCloudT);
 std::vector<PointCloudT::Ptr > clusters;
@@ -140,6 +141,37 @@ void joint_state_cb (const sensor_msgs::JointStateConstPtr& input) {
 		current_state = *input;
 	}
 }
+
+void computeClusters(PointCloudT::Ptr in, double tolerance){
+	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
+	tree->setInputCloud (in);
+
+	std::vector<pcl::PointIndices> cluster_indices;
+	pcl::EuclideanClusterExtraction<PointT> ec;
+	ec.setClusterTolerance (tolerance); // 2cm
+	//filter by door handle size assumed facing door head on and only have points of this size
+	ec.setMinClusterSize (300);
+	ec.setMaxClusterSize (800);
+	ec.setSearchMethod (tree);
+	ec.setInputCloud (in);
+	ec.extract (cluster_indices);
+
+	clusters.clear();
+
+	int j = 0;
+	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
+	{
+		PointCloudT::Ptr cloud_cluster (new PointCloudT);
+		for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
+			cloud_cluster->points.push_back (in->points[*pit]); //*
+		cloud_cluster->width = cloud_cluster->points.size ();
+		cloud_cluster->height = 1;
+		cloud_cluster->is_dense = true;
+
+		clusters.push_back(cloud_cluster);
+  }
+}
+
 
 void cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 {
@@ -304,12 +336,120 @@ bool seg_cb(elevator_press_button::color_perception::Request &req, elevator_pres
   passyxz.setFilterFieldName ("z");
   passyxz.setFilterLimits (.6, 1);
   passyxz.filter (*cloud_filtered);
+   pcl::toROSMsg(*cloud_filtered,cloud_ros);
+  cloud_pub.publish(cloud_ros);	
+ /* // Create the filtering object: downsample the dataset using a leaf size of 1cm
+	pcl::VoxelGrid<PointT> vg;
+	pcl::PointCloud<PointT>::Ptr cloud_filtered (new pcl::PointCloud<PointT>);
+	vg.setInputCloud (cloud);
+	vg.setLeafSize (0.0025f, 0.0025f, 0.0025f);
+	vg.filter (*cloud_filtered);
+	
+	pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
+	pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
+	// Create the segmentation object
+	pcl::SACSegmentation<PointT> seg;
+	// Optional
+	seg.setOptimizeCoefficients (true);
+	// Mandatory
+	seg.setModelType (pcl::SACMODEL_PLANE);
+	seg.setMethodType (pcl::SAC_RANSAC);
+	seg.setMaxIterations (1000);
+	seg.setDistanceThreshold (0.01);
+
+	// Create the filtering object
+	pcl::ExtractIndices<PointT> extract;
+
+	// Segment the largest planar component from the remaining cloud
+	seg.setInputCloud (cloud_filtered);
+	seg.segment (*inliers, *coefficients);
+
+	// Extract the plane
+	extract.setInputCloud (cloud_filtered);
+	extract.setIndices (inliers);
+	extract.setNegative (false);
+	extract.filter (*cloud_plane);
+
+	//extract everything else
+	extract.setNegative (true);
+	extract.filter (*cloud_blobs);
+
+
+	ROS_INFO("passed first filter");
+	
+	//get the plane coefficients
+	Eigen::Vector4f plane_coefficients;
+	
+	plane_coefficients(0)=coefficients->values[0];
+	plane_coefficients(1)=coefficients->values[1];
+	plane_coefficients(2)=coefficients->values[2];
+	plane_coefficients(3)=coefficients->values[3];
+	
+	//ROS_INFO("Planar coefficients: %f, %f, %f, %f",
+		//plane_coefficients(0),plane_coefficients(1),plane_coefficients(2),	plane_coefficients(3));
+	plane_coeff.x = plane_coefficients(0);
+	plane_coeff.y = plane_coefficients(1);
+	plane_coeff.z = plane_coefficients(2);
+	plane_coeff.w = plane_coefficients(3);
+
+	//Step 3: Eucledian Cluster Extraction
+	computeClusters(cloud_blobs,cluster_extraction_tolerance);
+	
+	ROS_INFO("Found %i clusters eucldian.",(int)clusters.size());
+
+	
+	clusters_on_plane.clear();
+
+	for (unsigned int i = 0; i < clusters.size(); i++){
+			clusters_on_plane.push_back(clusters.at(i));
+	}
+	
+	ROS_INFO("Found %i clusters on the plane after restrains.",(int)clusters_on_plane.size());
+	
+	//fill in response
+	
+	//plane cloud and coefficient
+	pcl::toROSMsg(*cloud_plane,res.cloud_plane);
+	
+	//check if valid information
+	if(clusters_on_plane.size() < 1){
+		ROS_INFO("Found 0 clusters or plane isn't vertical did not continue");	
+	} else {
+		ROS_INFO("Picked largest cluster");
+		pcl::toROSMsg(*clusters_on_plane.at(0),cloud_ros);
+		cloud_ros.header.frame_id = cloud->header.frame_id;
+		res.cloud_cluster = cloud_ros;
+		//TO DO: this may not always be the case
+	
+
+		ROS_INFO("passed second filer");
+		
+		//for debugging purposes
+		//now, put the clouds in cluster_on_plane in one cloud and publish it
+		cloud_blobs->clear();
+
+		for (unsigned int i = 0; i < clusters_on_plane.size(); i++){
+			*cloud_blobs += *clusters_on_plane.at(i);
+		}
+		
+		//To::DO figure out values of 180
+		
+		ROS_INFO("Publishing debug cloud...");
+		pcl::toROSMsg(*cloud_blobs,cloud_ros);
+		cloud_ros.header.frame_id = cloud->header.frame_id;
+		cloud_pub.publish(cloud_ros);
+  
+  }
   
   pcl::toROSMsg(*cloud_filtered,cloud_ros);
   cloud_pub.publish(cloud_ros);	
-  
+  */
   Eigen::Vector4f centroid;
   pcl::compute3DCentroid(*cloud_filtered,centroid);
+  
+  PointT max;
+  PointT min;
+  pcl::getMinMax3D(*cloud_filtered, min, max);
   
   geometry_msgs::PoseStamped goal;
   goal.pose.position.x = centroid.x();
@@ -318,6 +458,8 @@ bool seg_cb(elevator_press_button::color_perception::Request &req, elevator_pres
   //get it flat (180 degress)
   goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0,0,0);
   goal.header.frame_id = cloud_ros.header.frame_id;
+  
+
 		
 	tf::TransformListener listener;	
   //mext transform pose into arm frame of reference and set orientation
@@ -333,18 +475,18 @@ bool seg_cb(elevator_press_button::color_perception::Request &req, elevator_pres
 		
   //set orientation after transforming into arm frame of reference
   goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(1.54,0,1.54);
-  goal.pose.position.z -= .085;
+  //goal.pose.position.z -= .085;
 		
   //publish the two goals to get it to push the goor
   goal_pub.publish(goal);
-  goal.pose.position.z -= .06;
-  goal_pub_lower.publish(goal);
+  //goal.pose.position.z -= .06;
+  //goal_pub_lower.publish(goal);
   
   
   return true;
 		
+
 }	
-	
 
 
 int main (int argc, char** argv)

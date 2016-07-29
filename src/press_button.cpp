@@ -92,6 +92,7 @@ bool heardJoinstState = false;
 bool heardGoal = false;
 bool g_caught_sigint = false;
 
+ros::Publisher pub_velocity;
 ros::Publisher first_goal_pub;
 ros::Publisher second_goal_pub;
 
@@ -276,7 +277,6 @@ int main (int argc, char** argv)
 							
 	ros::spinOnce();                                            
 	segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
-	//moveit_controller_manager::(const ros::Duration & timeout = ros::Duration(20))
 	ros::spinOnce(); 
 	segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
 	ros::spinOnce(); 
@@ -287,10 +287,69 @@ int main (int argc, char** argv)
 							
 	ros::spinOnce();                                            
 	segbot_arm_manipulation::moveToPoseMoveIt(n,second_goal);
-	//moveit_controller_manager::(const ros::Duration & timeout = ros::Duration(20))
 	ros::spinOnce(); 
 	segbot_arm_manipulation::moveToPoseMoveIt(n,second_goal);
 	ros::spinOnce(); 						
+	
+	segbot_arm_manipulation::homeArm(n);
+	ros::spinOnce();
+	segbot_arm_manipulation::moveToPoseMoveIt(n,start_pose);
+	ros::spinOnce();
+	segbot_arm_manipulation::moveToPoseMoveIt(n,start_pose);
+	ros::spinOnce();
+	
+	first_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(1.54,0,3.14);
+	pressEnter();
+	ROS_INFO("goal picked...check if pose is what you want in rviz if not ctr c. 2.0");
+	segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);			
+	ros::spinOnce();                                            
+	segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
+	ros::spinOnce(); 
+	pressEnter();
+	double timeoutSeconds = 3.85;
+	int rateHertz = 100;
+	geometry_msgs::TwistStamped velocityMsg;
+	ros::Rate r(rateHertz);
+	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
+								
+		velocityMsg.twist.linear.x = 1.25;
+		velocityMsg.twist.linear.y = 0.1;
+		velocityMsg.twist.linear.z = 0.1;
+		
+		velocityMsg.twist.angular.x = 0.0;
+		velocityMsg.twist.angular.y = 0.0;
+		velocityMsg.twist.angular.z = 0.0;
+		
+		
+		pub_velocity.publish(velocityMsg);
+		
+		r.sleep();
+	}
+	
+	first_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(1.54,1.54,3.14);
+	pressEnter();
+	ROS_INFO("goal picked...check if pose is what you want in rviz if not ctr c. 2.0");
+	segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);			
+	ros::spinOnce();                                            
+	segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
+	ros::spinOnce(); 
+	pressEnter();
+	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
+								
+		velocityMsg.twist.linear.x = 1.25;
+		velocityMsg.twist.linear.y = 0.1;
+		velocityMsg.twist.linear.z = 0.1;
+		
+		velocityMsg.twist.angular.x = 0.0;
+		velocityMsg.twist.angular.y = 0.0;
+		velocityMsg.twist.angular.z = 0.0;
+		
+		
+		pub_velocity.publish(velocityMsg);
+		
+		r.sleep();
+	}
+	
 	ROS_INFO("Demo ending...arm will move back 'ready' position .");
 	segbot_arm_manipulation::homeArm(n);
 					
