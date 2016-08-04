@@ -167,7 +167,7 @@ void goal_cb (const geometry_msgs::PoseStampedConstPtr& input)
 		ROS_INFO("entered goal_cb");
 		first_goal.header = input->header;
 		first_goal.pose = input->pose; 
-		first_goal.pose.position.x -= .05;
+		first_goal.pose.position.x -= .07;
 		second_goal.header = input->header;
 		second_goal.pose = input->pose;
 		second_goal.pose.position.x += .15;
@@ -210,7 +210,7 @@ int main (int argc, char** argv)
 	
 	first_goal_pub = n.advertise<geometry_msgs::PoseStamped>("goal_picked", 1);
 	second_goal_pub = n.advertise<geometry_msgs::PoseStamped>("goal_to_go_2", 1);
-	
+	pub_velocity = n.advertise<geometry_msgs::TwistStamped>("/mico_arm_driver/in/cartesian_velocity", 10);
 	//subscriber for grasps
 	//ros::Subscriber sub_grasps = n.subscribe("/find_grasps/grasps_handles",1, &TabletopGraspActionServer::grasps_cb,this);  
 	
@@ -260,6 +260,9 @@ int main (int argc, char** argv)
 	pressEnter();
 	ROS_INFO("goal picked...check if pose is what you want in rviz if not ctr c.");
 	//segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
+	//first_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(1.54,0,3.14);
+	//first_goal.pose.position.y += .055;
+	first_goal.pose.position.z -= .0075;
 	first_goal_pub.publish(first_goal);	
 	//made vision calls check in rviz to see if correct then procede
 	pressEnter();
@@ -278,11 +281,57 @@ int main (int argc, char** argv)
 	ros::spinOnce();                                            
 	segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
 	ros::spinOnce(); 
+	//segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
+	//ros::spinOnce(); 
+					
+	
+	pressEnter();
+	ROS_INFO("goal picked...check if pose is what you want in rviz if not ctr c. 2.0");
+	/*segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);			
+	ros::spinOnce();                                            
 	segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
-	ros::spinOnce(); 
-					
-					
-		ROS_INFO("goal picked...check if pose is what you want in rviz if not ctr c.");
+	ros::spinOnce(); */
+	pressEnter();
+	double timeoutSeconds = 2.250;
+	int rateHertz = 100;
+	geometry_msgs::TwistStamped velocityMsg;
+	ros::Rate r(rateHertz);
+	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
+								
+		velocityMsg.twist.linear.x = 1.0/2;
+		velocityMsg.twist.linear.y = 0.0;
+		velocityMsg.twist.linear.z = 0.0;
+		
+		velocityMsg.twist.angular.x = 0.0;
+		velocityMsg.twist.angular.y = 0.0;
+		velocityMsg.twist.angular.z = 0.0;
+		
+		
+		pub_velocity.publish(velocityMsg);
+		
+		r.sleep();
+	}
+	
+	//go back
+	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
+								
+		velocityMsg.twist.linear.x = -1.25;
+		velocityMsg.twist.linear.y = 0.0;
+		velocityMsg.twist.linear.z = 0.0;
+		
+		velocityMsg.twist.angular.x = 0.0;
+		velocityMsg.twist.angular.y = 0.0;
+		velocityMsg.twist.angular.z = 0.0;
+		
+		
+		pub_velocity.publish(velocityMsg);
+		
+		r.sleep();
+	}
+	
+						
+	/*	ROS_INFO("goal picked...check if pose is what you want in rviz if not ctr c.");
+		pressEnter();
 	segbot_arm_manipulation::moveToPoseMoveIt(n,second_goal);
 							
 	ros::spinOnce();                                            
@@ -291,7 +340,7 @@ int main (int argc, char** argv)
 	segbot_arm_manipulation::moveToPoseMoveIt(n,second_goal);
 	ros::spinOnce(); 						
 	
-	segbot_arm_manipulation::homeArm(n);
+	/*segbot_arm_manipulation::homeArm(n);
 	ros::spinOnce();
 	segbot_arm_manipulation::moveToPoseMoveIt(n,start_pose);
 	ros::spinOnce();
@@ -337,8 +386,8 @@ int main (int argc, char** argv)
 	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
 								
 		velocityMsg.twist.linear.x = 1.25;
-		velocityMsg.twist.linear.y = 0.1;
-		velocityMsg.twist.linear.z = 0.1;
+		velocityMsg.twist.linear.y = 0.01;
+		velocityMsg.twist.linear.z = 0.01;
 		
 		velocityMsg.twist.angular.x = 0.0;
 		velocityMsg.twist.angular.y = 0.0;
@@ -348,7 +397,7 @@ int main (int argc, char** argv)
 		pub_velocity.publish(velocityMsg);
 		
 		r.sleep();
-	}
+	}*/
 	
 	ROS_INFO("Demo ending...arm will move back 'ready' position .");
 	segbot_arm_manipulation::homeArm(n);

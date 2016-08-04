@@ -475,7 +475,7 @@ bool seg_cb(elevator_press_button::color_perception::Request &req, elevator_pres
 		
   //set orientation after transforming into arm frame of reference
   goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(1.54,0,1.54);
-  //goal.pose.position.z -= .085;
+  goal.pose.position.z -= .085;
 		
   //publish the two goals to get it to push the goor
   goal_pub.publish(goal);
