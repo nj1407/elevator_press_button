@@ -10,8 +10,10 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   sensor_msgs
   geometry_msgs
+  genmsg
+  cv_bridge
+  image_transport
   message_generation
-  #jaco_msgs
   actionlib
   pcl_ros
   pcl_conversions
@@ -25,7 +27,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 find_package(PCL 1.2 REQUIRED)
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 2 REQUIRED)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -157,7 +160,7 @@ add_definitions(${PCL_DEFINITIONS})
 ## same as for the library above
  add_dependencies(pcl_panel_filter elevator_press_button_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
  add_dependencies(press_button elevator_press_button_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
- add_dependencies(see_button_opencv elevator_press_button_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+ add_dependencies(see_button_opencv elevator_press_button_gencpp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${OpenCV_LIBRARIES})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(pcl_panel_filter ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES})

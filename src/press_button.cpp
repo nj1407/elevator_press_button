@@ -174,6 +174,7 @@ void goal_cb (const geometry_msgs::PoseStampedConstPtr& input)
 		heardGoal = true;
 		
 }
+
 void toolpos_cb (const geometry_msgs::PoseStampedConstPtr& input)
 {
 		ROS_INFO("entered toolposecb");
@@ -262,6 +263,7 @@ int main (int argc, char** argv)
 	//segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
 	//first_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(1.54,0,3.14);
 	//first_goal.pose.position.y += .055;
+	//TODO condisder offset of calibration of arm
 	first_goal.pose.position.z -= .0075;
 	first_goal_pub.publish(first_goal);	
 	//made vision calls check in rviz to see if correct then procede
@@ -296,8 +298,14 @@ int main (int argc, char** argv)
 	int rateHertz = 100;
 	geometry_msgs::TwistStamped velocityMsg;
 	ros::Rate r(rateHertz);
+	bool end = false;
+	geometry_msgs::PoseStamped previous_pose;
+	
 	for(int i = 0; i < (int)timeoutSeconds * rateHertz; i++) {
-								
+		if(end){
+			break;
+		}		
+		previous_pose = current_pose;
 		velocityMsg.twist.linear.x = 1.0/2;
 		velocityMsg.twist.linear.y = 0.0;
 		velocityMsg.twist.linear.z = 0.0;
@@ -305,8 +313,16 @@ int main (int argc, char** argv)
 		velocityMsg.twist.angular.x = 0.0;
 		velocityMsg.twist.angular.y = 0.0;
 		velocityMsg.twist.angular.z = 0.0;
-		
-		
+		ros::spinOnce();
+		ROS_INFO("arm position x %f",  current_pose.pose.position.x);	
+		ROS_INFO("arm position y %f", current_pose.pose.position.y);	
+		ROS_INFO("arm position z %f", current_pose.pose.position.z);
+		ROS_INFO("previous arm position x %f",  previous_pose.pose.position.x);	
+		ROS_INFO("previous arm position y %f", previous_pose.pose.position.y);	
+		ROS_INFO("previousarm position z %f", previous_pose.pose.position.z);
+		if(previous_pose.pose.position.z > current_pose.pose.position.z){
+			end = true;
+		}	
 		pub_velocity.publish(velocityMsg);
 		
 		r.sleep();
