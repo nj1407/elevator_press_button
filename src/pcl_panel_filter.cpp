@@ -284,12 +284,7 @@ void waitForCloudK(int k){
 }
 
 bool seg_cb(elevator_press_button::color_perception::Request &req, elevator_press_button::color_perception::Response &res)
-{
-    //listener for transforrms
-    //tf::TransformListener listener;
-    
-    
-    
+{    
   ROS_INFO("entered seg_cb");
   //get the point cloud by aggregating k successive input clouds
   waitForCloudK(15);
@@ -344,39 +339,37 @@ bool seg_cb(elevator_press_button::color_perception::Request &req, elevator_pres
   pcl::toROSMsg(*cloud_filtered,cloud_ros);
   debug_pub.publish(cloud_ros); 
   // Create the filtering object: downsample the dataset using a leaf size of 1cm
-    pcl::VoxelGrid<PointT> vg;
-    pcl::PointCloud<PointT>::Ptr filtered (new pcl::PointCloud<PointT>);
-    vg.setInputCloud (cloud_filtered);
-    vg.setLeafSize (0.0025f, 0.0025f, 0.0025f);
-    vg.filter (*filtered);
+  pcl::VoxelGrid<PointT> vg;
+  pcl::PointCloud<PointT>::Ptr filtered (new pcl::PointCloud<PointT>);
+  vg.setInputCloud (cloud_filtered);
+  vg.setLeafSize (0.0025f, 0.0025f, 0.0025f);
+  vg.filter (*filtered);
 
-    ROS_INFO("before clustering");  
-    // Create the filtering object
+  ROS_INFO("before clustering");  
+  // Create the filtering object
     
-    ROS_INFO("Found %i points.",(int)filtered->points.size ());
-    computeClusters(filtered,cluster_extraction_tolerance);
+  ROS_INFO("Found %i points.",(int)filtered->points.size ());
+  computeClusters(filtered,cluster_extraction_tolerance);
     
-    ROS_INFO("Found %i clusters eucldian.",(int)clusters.size());
+  ROS_INFO("Found %i clusters eucldian.",(int)clusters.size());
+     
+  clusters_on_plane.clear();
 
+  for (unsigned int i = 0; i < clusters.size(); i++){ 
+    clusters_on_plane.push_back(clusters.at(i));
+  }
     
-    clusters_on_plane.clear();
-
-    for (unsigned int i = 0; i < clusters.size(); i++){ 
-            clusters_on_plane.push_back(clusters.at(i));
-    }
-    
-    if(clusters_on_plane.size() < 1 ){
-        ROS_INFO("Found 0 clusters did not continue");  
-    } else {
-        ROS_INFO("Picked largest cluster");
-        pcl::toROSMsg(*clusters_on_plane.at(0),cloud_ros);
-        cloud_ros.header.frame_id = cloud->header.frame_id;
-        res.cloud_cluster = cloud_ros;
-      //  cloud_pub.publish(cloud_ros);
-    }   
+  if(clusters_on_plane.size() < 1 ){
+      ROS_INFO("Found 0 clusters did not continue");  
+  } else {
+      ROS_INFO("Picked largest cluster");
+      pcl::toROSMsg(*clusters_on_plane.at(0),cloud_ros);
+      cloud_ros.header.frame_id = cloud->header.frame_id;
+      res.cloud_cluster = cloud_ros;
+  }   
     
     
-    //needs to be tested 
+    //doesn't work due to angle
    //transform into the arm's base, transform cloud
    /*
         sensor_msgs::PointCloud2 tgt=  res.cloud_cluster;
@@ -471,20 +464,14 @@ int main (int argc, char** argv)
     elevator_cloud_pub = n.advertise<sensor_msgs::PointCloud2>("elevator_detector/plane_cloud", 1);
     goal_pub = n.advertise<geometry_msgs::PoseStamped>("goal_to_go", 1);
     goal_pub_lower = n.advertise<geometry_msgs::PoseStamped>("goal_to_go_two", 1);
-    //publisher for planar coefficents
-    //tf::transformEigenToTF(planar_coefficent_pub);
     
     //service
     ros::ServiceServer service = n.advertiseService("pcl_button_filter/color_perception", seg_cb);
-    
-
-    
+        
     //refresh rate
     double ros_rate = 3.0;
     ros::Rate r(ros_rate);
 
-    
-    //listener = tf.TransformListener();
     // Main loop:
     while (!g_caught_sigint && ros::ok())
     {

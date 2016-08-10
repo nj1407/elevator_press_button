@@ -295,8 +295,6 @@ int main (int argc, char** argv)
     pressEnter();
     ROS_INFO("goal picked...check if pose is what you want in rviz if not ctr c.");
     //segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
-    //first_goal.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(1.54,0,3.14);
-    //first_goal.pose.position.y += .055;
     //TODO condisder offset of calibration of arm
     first_goal.pose.position.z -= .0075;
     first_goal.pose.position.y -= .2;
@@ -313,14 +311,10 @@ int main (int argc, char** argv)
                             
     pressEnter();
     ROS_INFO("goal picked...check if pose is what you want in rviz if not ctr c.");
-    segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
-                            
+    segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);   
     ros::spinOnce();                                            
     segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
-    ros::spinOnce(); 
-    //segbot_arm_manipulation::moveToPoseMoveIt(n,first_goal);
-    //ros::spinOnce(); 
-                    
+    ros::spinOnce();                   
     
     pressEnter();
     ROS_INFO("goal picked...check if pose is what you want in rviz if not ctr c. 2.0");
