@@ -369,9 +369,8 @@ bool seg_cb(elevator_press_button::color_perception::Request &req, elevator_pres
   }   
     
     
-    //doesn't work due to angle
    //transform into the arm's base, transform cloud
-   /*
+   
         sensor_msgs::PointCloud2 tgt=  res.cloud_cluster;
         
         std::string sensor_frame_id = tgt.header.frame_id;
@@ -398,7 +397,7 @@ bool seg_cb(elevator_press_button::color_perception::Request &req, elevator_pres
             PointCloudT pcl_cloud;
         pcl::fromROSMsg(tgt, pcl_cloud);
         cloud_pub.publish(pcl_cloud);
-       */
+       
   PointT max;
   PointT min; 
   pcl::getMinMax3D(*clusters_on_plane.at(0), min, max);
@@ -416,7 +415,7 @@ bool seg_cb(elevator_press_button::color_perception::Request &req, elevator_pres
   
 
         
-   tf::TransformListener listener; 
+   //tf::TransformListener listener; 
   //mext transform pose into arm frame of reference and set orientation
   try{
     listener.waitForTransform(cloud_ros.header.frame_id,  "mico_link_origin",  ros::Time(0), ros::Duration(5.0) );
